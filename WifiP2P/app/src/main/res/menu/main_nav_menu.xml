@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#e1e1e1">
+
+    <item android:title = "Select a service"/>
+
+    <item
+        android:id="@+id/mainToChat"
+        android:title="To Chat" />
+
+    <item
+        android:id="@+id/mainToVocal"
+        android:title="To Vocal" />
+
+
+</menu>
