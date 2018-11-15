@@ -35,6 +35,7 @@ public class VoiceStreamer {
                 @Override
                 public void run() {
                     try {
+                        Log.i("VoiceStreaming", "Starting Streaming Thread");
                         DatagramSocket socket = new DatagramSocket();
                         socket.setReuseAddress(true);
                         byte[] buffer = new byte[minBufSize];

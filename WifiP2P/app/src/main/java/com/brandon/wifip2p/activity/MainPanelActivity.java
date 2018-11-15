@@ -196,8 +196,9 @@ public class MainPanelActivity extends WifiP2pActivity {
                             logln("Error : You need to be connected to at least one peer to go to Chat Activity.");
                         break;
                     case R.id.mainToVocal:
+                        goToWifiP2pActivity(VocalActivity.class);
                         if (getConnectionInfo().groupFormed)
-                            goToWifiP2pActivity(VocalActivity.class);
+                            System.out.println(); // TODO : remettre la secu
                         else
                             logln("Error : You need to be connected to at least one peer to go to Vocal Activity.");
                         break;

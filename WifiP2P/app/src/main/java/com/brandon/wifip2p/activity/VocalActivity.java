@@ -10,6 +10,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -19,6 +20,8 @@ import com.brandon.wifip2p.voice.VoiceReceiver;
 import com.brandon.wifip2p.voice.VoiceStreamer;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
 
 public class VocalActivity extends WifiP2pActivity {
 
@@ -37,6 +40,8 @@ public class VocalActivity extends WifiP2pActivity {
 
     private final int VOICE_PORT = 50005;
 
+    private Thread updateListViewThread;
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -45,6 +50,20 @@ public class VocalActivity extends WifiP2pActivity {
 
         initViews();
         initListeners();
+
+        updateListViewThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try{
+                    updateConnectedDeviceList();
+                    updateListView(connectedDevicesList, connectedDevices);
+                    Thread.sleep(1000);
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        });
+        updateListViewThread.start();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 1);
@@ -68,8 +87,10 @@ public class VocalActivity extends WifiP2pActivity {
             public void onClick(View view) {
                 try {
                     selectedInetAddress = InetAddress.getByName(MainPanelActivity.currentIpConnected);
+                    //selectedInetAddress = InetAddress.getByName("192.168.43.234");
                     if (selectedInetAddress != null) {
                         if (voiceStreamer != null){
+                            voiceStreamer.stopStreaming();
                             voiceStreamer.startStreaming();
                             informations.setText("Streaming MIC on port 50005");
                         }
@@ -160,7 +181,7 @@ public class VocalActivity extends WifiP2pActivity {
 
     private void disconnect(){
         if (voiceReceiver != null){
-            voiceStreamer.stopStreaming();
+            voiceReceiver.stopReceive();
         }
         if (voiceStreamer != null){
             voiceStreamer.stopStreaming();
@@ -168,15 +189,24 @@ public class VocalActivity extends WifiP2pActivity {
         informations.setText("Disconnected");
     }
 
+    private void updateListView(ListView listView, List<WifiP2pDevice> devices){
+        List<String> connectedDeviceName = new ArrayList<>();
+        for (WifiP2pDevice device : devices) {
+            connectedDeviceName.add(device.deviceName);
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(getApplicationContext(), android.R.layout.simple_list_item_1, connectedDeviceName);
+        listView.setAdapter(adapter);
+    }
+
     @Override
     public void finish() {
-        super.finish();
         disconnect();
+        super.finish();
     }
 
     @Override
     protected void onPause() {
-        super.onPause();
         disconnect();
+        super.onPause();
     }
 }

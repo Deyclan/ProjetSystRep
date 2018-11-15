@@ -2,14 +2,20 @@ package com.brandon.wifip2p.voice;
 
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioRecord;
 import android.media.AudioTrack;
+import android.os.Build;
+import android.support.annotation.RequiresApi;
+import android.util.Log;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 
 public class VoiceReceiver {
 
-    private final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO;
+    //private final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_STEREO;
+    private final int CHANNEL_CONFIG = 1;
     private final int ENCODING = AudioFormat.ENCODING_PCM_16BIT;
     private final int SAMPLE_RATE = 44100;
 
@@ -28,18 +34,19 @@ public class VoiceReceiver {
             @Override
             public void run() {
                 try {
+                    Log.i("VoiceReceiver", "Starting Receiver Thread");
                     DatagramSocket datagramSocket = new DatagramSocket(port);
                     datagramSocket.setReuseAddress(true);
-                    byte[] receiveData = new byte[3584];        // ( 1280 for 16 000Hz and 3584 for 44 100Hz (use AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, ENCODING) to get the correct size)
+                    int i = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, ENCODING);
+                    byte[] receiveData = new byte[i];        // ( 1280 for 16 000Hz and 3584 for 44 100Hz (use AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, ENCODING) to get the correct size)
 
-                    speaker = initSpeaker(SAMPLE_RATE, ENCODING, CHANNEL_CONFIG, receiveData.length, AudioTrack.MODE_STREAM);
+                    speaker = initSpeaker(SAMPLE_RATE, ENCODING, CHANNEL_CONFIG, i/20, AudioTrack.MODE_STREAM);
 
                     DatagramPacket packet;
                     while (receiving){
                         packet = new DatagramPacket(receiveData, receiveData.length);
                         datagramSocket.receive(packet);
                         receiveData = packet.getData();
-
                         toSpeaker(receiveData);
                     }
 
@@ -65,11 +72,11 @@ public class VoiceReceiver {
     }
 
     private AudioTrack initSpeaker(int sampleRate, int encoding, int channelConfig, int bufferSizeInByte, int audioTrackMode){
+        /*
         AudioFormat format = new AudioFormat.Builder()
                 .setSampleRate(sampleRate)
                 .setEncoding(encoding)
-                .setChannelMask(channelConfig).build();
-        //format = new AudioFormat(SAMPLE_RATE, 16, 1, true, false);
+                .build();
 
         AudioTrack speaker = new AudioTrack(
                 new AudioAttributes.Builder()
@@ -79,6 +86,8 @@ public class VoiceReceiver {
                 bufferSizeInByte,
                 audioTrackMode,
                 0);
+        */
+        AudioTrack speaker = new AudioTrack(AudioManager.STREAM_MUSIC, sampleRate, channelConfig, encoding, bufferSizeInByte, audioTrackMode);
         speaker.play();
         return speaker;
     }
