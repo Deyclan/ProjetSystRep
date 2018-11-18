@@ -5,23 +5,29 @@ import android.net.wifi.p2p.WifiP2pDevice;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
 import android.support.v4.widget.DrawerLayout;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
 import com.brandon.wifip2p.R;
+import com.brandon.wifip2p.Utils.DataHolder;
 import com.brandon.wifip2p.voice.VoiceReceiver;
 import com.brandon.wifip2p.voice.VoiceStreamer;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class VocalActivity extends WifiP2pActivity {
 
@@ -56,7 +62,7 @@ public class VocalActivity extends WifiP2pActivity {
             public void run() {
                 try{
                     updateConnectedDeviceList();
-                    updateListView(connectedDevicesList, connectedDevices);
+                    updateListView(connectedDevicesList, DataHolder.getInstance().getNetworkInetAdressMap());
                     Thread.sleep(1000);
                 }catch (Exception e){
                     e.printStackTrace();
@@ -195,6 +201,28 @@ public class VocalActivity extends WifiP2pActivity {
             connectedDeviceName.add(device.deviceName);
         }
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getApplicationContext(), android.R.layout.simple_list_item_1, connectedDeviceName);
+        listView.setAdapter(adapter);
+    }
+
+    private void updateListView(ListView listView, Map<String, String> devices){
+        final ArrayList<String> names = new ArrayList<>();
+        final ArrayList<String> ip = new ArrayList<>();
+        for (Map.Entry<String, String> entry : devices.entrySet()){
+            names.add(entry.getKey());
+            ip.add(entry.getValue());
+        }
+        ArrayAdapter adapter = new ArrayAdapter(getApplicationContext(), android.R.layout.simple_list_item_2, android.R.id.text1, names){
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                View view = super.getView(position, convertView, parent);
+                TextView text1 = view.findViewById(android.R.id.text1);
+                TextView text2 = view.findViewById(android.R.id.text2);
+
+                text1.setText(names.get(position));
+                text2.setText(ip.get(position));
+                return view;
+            }
+        };
         listView.setAdapter(adapter);
     }
 

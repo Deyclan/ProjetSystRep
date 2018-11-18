@@ -40,7 +40,7 @@ public class VoiceReceiver {
                     int i = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, ENCODING);
                     byte[] receiveData = new byte[i];        // ( 1280 for 16 000Hz and 3584 for 44 100Hz (use AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, ENCODING) to get the correct size)
 
-                    speaker = initSpeaker(SAMPLE_RATE, ENCODING, CHANNEL_CONFIG, i/20, AudioTrack.MODE_STREAM);
+                    speaker = initSpeaker(SAMPLE_RATE, ENCODING, CHANNEL_CONFIG, i/20+1, AudioTrack.MODE_STREAM);
 
                     DatagramPacket packet;
                     while (receiving){

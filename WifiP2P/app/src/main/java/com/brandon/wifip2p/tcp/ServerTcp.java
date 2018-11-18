@@ -32,10 +32,12 @@ public class ServerTcp implements Runnable {
     public void run() {
         try {
             serverSocket = new ServerSocket(port);
+            serverSocket.setReuseAddress(true);
             handler.dispatchMessage(createStartingMessage(port));
             while (running) {
                 Socket incommingClientSocket = serverSocket.accept();
                 handler.dispatchMessage(createDescriptionMessage(incommingClientSocket));
+                handler.dispatchMessage(createRegistrationMessage(incommingClientSocket.getInetAddress()));
                 current = new ConnexionTcp(incommingClientSocket, handler);
                 Thread t = new Thread(current);
                 t.start();
@@ -109,6 +111,13 @@ public class ServerTcp implements Runnable {
                 .append("\n")
                 .append("\tPort (Local) : ")
                 .append(socket.getLocalPort());
+        return message;
+    }
+
+    private Message createRegistrationMessage(InetAddress inetAddress){
+        Message message = new Message();
+        message.what = MainPanelActivity.IDENTIFICATION;
+        message.obj = inetAddress;
         return message;
     }
 }

@@ -29,7 +29,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.brandon.wifip2p.R;
+import com.brandon.wifip2p.Utils.DataHolder;
 import com.brandon.wifip2p.p2pmanagement.WiFiDirectBroadcastReceiver;
+import com.brandon.wifip2p.peeridentification.doesntwork.NetworkUpdater;
+import com.brandon.wifip2p.peeridentification.doesntwork.P2pIdentificationConnexion;
 import com.brandon.wifip2p.tcp.ConnexionTcp;
 import com.brandon.wifip2p.tcp.ServerTcp;
 
@@ -55,6 +58,8 @@ public class MainPanelActivity extends WifiP2pActivity {
     public static int TCP_TIMEOUT = 1000;
     public final static int MESSAGE_TYPE = 0;
     public final static int DATA_TYPE = 1;
+    public final static int IDENTIFICATION = 2;
+    public final static int ERROR = -1;
 
     private ServerTcp serverTcp;
     private ConnexionTcp connexionTcp;
@@ -64,6 +69,7 @@ public class MainPanelActivity extends WifiP2pActivity {
     private Handler loggerHandler;
 
     public static String currentIpConnected;
+    private DataHolder dataHolder = DataHolder.getInstance();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -101,7 +107,7 @@ public class MainPanelActivity extends WifiP2pActivity {
             @Override
             public void handleMessage(final Message msg) {
                 switch (msg.what) {
-                    case 0:
+                    case MESSAGE_TYPE:
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -112,7 +118,7 @@ public class MainPanelActivity extends WifiP2pActivity {
                             }
                         });
                         break;
-                    case 1:
+                    case DATA_TYPE:
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -120,6 +126,20 @@ public class MainPanelActivity extends WifiP2pActivity {
                             }
                         });
                         break;
+                    case IDENTIFICATION:
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    String[] s = msg.obj.toString().split("#");
+                                    dataHolder.updateNetworkPeers(s[0], s[1]);
+                                    networkUpdater.sendNetworkUpdate();
+                                }catch (Exception e){
+                                    e.printStackTrace();
+                                }
+                            }
+                        }).start();
+
                     default:
                         break;
                 }
@@ -154,7 +174,7 @@ public class MainPanelActivity extends WifiP2pActivity {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 WifiP2pGroup wifiP2pGroupInfo = getGroupInfo();
-                if (wifiP2pGroupInfo != null) {
+                if (wifiP2pGroupInfo == null) {
                     AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainPanelActivity.this);
                     alertDialogBuilder.setTitle("Warning")
                             .setMessage("You are the Group Owner. This action will remove the entire group. Are you sure of your move ?")
@@ -215,12 +235,6 @@ public class MainPanelActivity extends WifiP2pActivity {
             forceGO.setChecked(true);
         broadcastReceiver = new WiFiDirectBroadcastReceiver(wifiP2pManager, wifiP2pChannel, this);
         registerReceiver(broadcastReceiver, intentFilter);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        //unregisterReceiver(broadcastReceiver);
     }
 
     protected void updateConnectedDeviceList() {
@@ -405,26 +419,22 @@ public class MainPanelActivity extends WifiP2pActivity {
         if (wifiP2pInfo.groupFormed && wifiP2pInfo.isGroupOwner) {
             logln("Connected as Group Owner");
             updateConnectionState(2);
-            if (serverTcp == null) {
-                serverTcp = new ServerTcp(SERVER_PORT, loggerHandler);
-                serverTcpThread = new Thread(serverTcp);
-                serverTcpThread.start();
+            dataHolder.updateNetworkPeers(thisDevice.deviceName, wifiP2pInfo.groupOwnerAddress.toString()); // TODO : Check thisDevice not null
+            new P2pIdentificationConnexion(SERVER_PORT, loggerHandler).requestIdentification();
+            if (NetworkUpdater.getInstance() != null){
+                NetworkUpdater.getInstance().sendNetworkUpdate(20);
             }
+
         }
         else if (wifiP2pInfo.groupFormed){
             logln("Connected as Group Member");
             forceGO.setChecked(false);
             updateConnectionState(2);
-            if (connexionTcp == null) {
-                currentIpConnected = wifiP2pInfo.groupOwnerAddress.toString().replace("/", "");
-                connexionTcp = new ConnexionTcp(wifiP2pInfo.groupOwnerAddress, SERVER_PORT, loggerHandler);
-                connexionThread = new Thread(connexionTcp);
-                connexionThread.start();
-            }
+            new P2pIdentificationConnexion(wifiP2pInfo.groupOwnerAddress, SERVER_PORT, thisDevice,  loggerHandler).sendIdentification();
+
         }
         else {
             updateConnectionState(0);
-            disconnectTCP();
             forceGO.setChecked(false);
             scanPeers();
         }

@@ -18,8 +18,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
 import com.brandon.wifip2p.p2pmanagement.WiFiDirectBroadcastReceiver;
+import com.brandon.wifip2p.peeridentification.doesntwork.NetworkUpdater;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -37,6 +37,13 @@ public class WifiP2pActivity extends AppCompatActivity implements WifiP2pManager
     protected static WifiP2pGroup wifiP2pGroup;
     protected static WifiP2pInfo wifiP2pInfo;
 
+
+    protected static NetworkUpdater networkUpdater = NetworkUpdater.getInstance();
+    protected static Thread networkUpdaterThread;
+
+    protected static WifiP2pDevice thisDevice;
+
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,6 +57,9 @@ public class WifiP2pActivity extends AppCompatActivity implements WifiP2pManager
             initWifi();
         if (!wifiManager.isWifiEnabled())
             askEnableWifi();
+
+        networkUpdaterThread = new Thread(networkUpdater);
+        networkUpdaterThread.start();
     }
 
     @Override
@@ -77,7 +87,6 @@ public class WifiP2pActivity extends AppCompatActivity implements WifiP2pManager
                 .setNegativeButton(android.R.string.no, null)
                 .show();
     }
-
     protected void updateConnectedDeviceList(){
         wifiP2pManager.requestGroupInfo(wifiP2pChannel, new WifiP2pManager.GroupInfoListener() {
             @Override
@@ -267,6 +276,14 @@ public class WifiP2pActivity extends AppCompatActivity implements WifiP2pManager
 
     public WifiP2pInfo getWifiP2pInfo() {
         return wifiP2pInfo;
+    }
+
+    public WifiP2pDevice getThisDevice() {
+        return thisDevice;
+    }
+
+    public void setThisDevice(WifiP2pDevice thisDevice) {
+        WifiP2pActivity.thisDevice = thisDevice;
     }
 
     protected void goToWifiP2pActivity(Class<? extends WifiP2pActivity> cls){

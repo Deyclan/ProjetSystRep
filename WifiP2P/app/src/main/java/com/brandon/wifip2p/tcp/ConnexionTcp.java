@@ -45,6 +45,7 @@ public class ConnexionTcp implements Runnable {
         try{
             if (socket == null) {
                 socket = new Socket();
+                socket.setReuseAddress(true);
                 socket.connect(new InetSocketAddress(address, port), MainPanelActivity.TCP_TIMEOUT);
             }
             reader = this.socket.getInputStream();
@@ -86,7 +87,7 @@ public class ConnexionTcp implements Runnable {
 
     private void postMessage(String stringMessage){
         Message message = new Message();
-        message.what = 0;
+        message.what = MainPanelActivity.MESSAGE_TYPE;
         message.obj = stringMessage;
         handler.dispatchMessage(message);
     }
